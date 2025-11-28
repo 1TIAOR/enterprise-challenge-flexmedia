@@ -13,7 +13,6 @@
 ## 👨‍🎓 Integrantes:
 
 - Gabriel Henrique de Oliveira Moraes
-- Guilherme Filartiga Pereira da Silva
 - Thiago Limongi Faria dos Reis
 - Gabriel Luiz Fagundes
 
@@ -92,20 +91,35 @@ O Totem é composto por três camadas principais:
 
 - `totems` → informações físicas do dispositivo.
 - `sessions` → período ativo de interação.
-- `events` → cliques e ações do usuário.
-- `vision_ticks` → medições de atenção/emoção por janela de tempo.
-- `affect_sessions` → agregados por sessão (valência, arousal, dwell time, gaze mean).
+- `sensor_events` → eventos de sensores (toque, presença, LDR).
+- `session_aggregates` → agregados por sessão (métricas de engajamento).
+- `vision_ticks` → medições de atenção/emoção por janela de tempo (futuro).
+- `affect_sessions` → agregados por sessão (valência, arousal, dwell time, gaze mean) (futuro).
 
-**Exemplo de evento registrado:**
+**Exemplo de evento de sensor registrado:**
+
+```json
+{
+  "event_type": "touch",
+  "timestamp": "2025-01-15T14:30:00Z",
+  "value": 1,
+  "duration": 1.2,
+  "touch_type": "long",
+  "totem_id": "TOTEM-001",
+  "session_id": "uuid"
+}
+```
+
+**Exemplo de agregação de sessão:**
 
 ```json
 {
   "session_id": "uuid",
-  "ts": "2025-11-01T13:22:00Z",
-  "people_count": 1,
-  "gaze_score": 0.78,
-  "valence": 0.12,
-  "arousal": 0.45
+  "total_touches": 5,
+  "short_touches": 3,
+  "long_touches": 2,
+  "avg_light_level": 650.5,
+  "interaction_score": 75.5
 }
 ```
 
@@ -169,30 +183,121 @@ Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
 
 ## 🔧 Como Executar o Código
 
-> _Nesta Sprint não há código executável._  
-> Nas próximas sprints, o repositório incluirá:
+### Pré-requisitos
 
-1. Firmware do **ESP32** (para sensores e câmera);
-2. **API REST** para recebimento de eventos;
-3. **Dashboard Metabase** conectado ao banco PostgreSQL.
-
-**Pré-requisitos futuros:**
+**Opção 1: Execução Local**
 
 - Python 3.10+
-- Node.js 20+
-- PostgreSQL
-- Conta Cloud (Oracle / AWS / GCP)
+- PostgreSQL 12+
+- pip ou yarn (para instalação de dependências)
+
+**Opção 2: Execução com Docker (Recomendado)**
+
+- Docker 20.10+
+- Docker Compose 2.0+
+
+### Instalação
+
+1. **Clone o repositório:**
+
+```bash
+git clone <repository-url>
+cd enterprise-challenge-flexmedia
+```
+
+2. **Instale as dependências:**
+
+```bash
+pip install -r requirements.txt
+# ou
+yarn install
+```
+
+3. **Configure o banco de dados:**
+
+   - Crie um arquivo `.env` baseado em `.env.example`
+   - Configure as credenciais do PostgreSQL
+
+4. **Inicialize o banco de dados:**
+
+```bash
+python src/database/init_db.py
+```
+
+### Executando os Componentes
+
+#### 1. Coletor de Dados (Simulação)
+
+```bash
+python src/data_collector.py
+```
+
+#### 2. Limpeza de Dados
+
+```bash
+python src/data_cleaning.py
+```
+
+#### 3. Análise Estatística
+
+```bash
+python src/analysis/data_analysis.py
+```
+
+#### 4. Treinamento do Modelo ML
+
+```bash
+python src/ml/touch_classifier.py
+```
+
+#### 5. Dashboard Interativo
+
+```bash
+streamlit run src/dashboard/app.py
+```
+
+O dashboard estará disponível em `http://localhost:8501`
+
+### Executando com Docker (Recomendado)
+
+Para facilitar o setup, o projeto inclui configuração Docker completa:
+
+1. **Configure as variáveis de ambiente:**
+
+```bash
+cp .env.example .env
+```
+
+2. **Inicie os serviços:**
+
+```bash
+docker-compose up -d
+```
+
+3. **Acesse o dashboard:**
+
+```
+http://localhost:8501
+```
+
+4. **Gere dados de exemplo:**
+
+```bash
+docker-compose exec api python scripts/generate_sample_data.py --sessions 10
+```
+
+Para mais informações sobre Docker, consulte [DOCKER.md](DOCKER.md).
 
 ---
 
 ## 🗓 Plano de Desenvolvimento
 
-| Sprint | Entregas                                                       |
-| ------ | -------------------------------------------------------------- |
-| **1**  | Documentação técnica (escopo, arquitetura, segurança e plano). |
-| **2**  | PoC de coleta (ESP32 e simulação de API).                      |
-| **3**  | Dashboards e análise exploratória.                             |
-| **4**  | Modelo de IA funcional (predição de NPS).                      |
+| Sprint | Entregas                                                       | Status                |
+| ------ | -------------------------------------------------------------- | --------------------- |
+| **1**  | Documentação técnica (escopo, arquitetura, segurança e plano). | ✅ Concluído          |
+| **2**  | Integração sensores, banco SQL, análise Python e ML básico.    | ✅ Concluído          |
+| **3**  | Dashboards avançados e análise exploratória completa.          | 🔄 Em desenvolvimento |
+| **4**  | Modelo de IA funcional (predição de NPS).                      | 📋 Planejado          |
 
 ---
 
@@ -209,7 +314,8 @@ Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
 
 ## 🗃 Histórico de Lançamentos
 
-- 0.1.0 — 11/2025 — Entrega Sprint 1 (Documentação e Arquitetura).
+- **0.2.0** — 01/2025 — Sprint 2: Integração de sensores, banco de dados SQL, análise estatística, ML supervisionado e dashboard.
+- **0.1.0** — 11/2025 — Sprint 1: Documentação técnica (escopo, arquitetura, segurança e plano).
 
 ---
 

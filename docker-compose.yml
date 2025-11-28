@@ -1,0 +1,79 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: flexmedia_db
+    environment:
+      POSTGRES_USER: flexmedia_user
+      POSTGRES_PASSWORD: flexmedia_password
+      POSTGRES_DB: flexmedia_totem
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flexmedia_user -d flexmedia_totem"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flexmedia_network
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: flexmedia_api
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: flexmedia_totem
+      DB_USER: flexmedia_user
+      DB_PASSWORD: flexmedia_password
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-me-in-production}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./src/ml/models:/app/src/ml/models
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+    networks:
+      - flexmedia_network
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: flexmedia_dashboard
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: flexmedia_totem
+      DB_USER: flexmedia_user
+      DB_PASSWORD: flexmedia_password
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    ports:
+      - "8501:8501"
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    volumes:
+      - ./src:/app/src
+      - ./src/ml/models:/app/src/ml/models
+    networks:
+      - flexmedia_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  flexmedia_network:
+    driver: bridge
